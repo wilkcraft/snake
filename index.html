@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Juego de la Serpiente</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            background-color: #1e1e1e;
+            display: block;
+            margin-top: 20px;
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 15px;
+            font-size: 20px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            width: 70px;
+            height: 70px;
+        }
+
+        .controls button img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .controls button:hover {
+            background-color: #444;
+        }
+
+        .controls button:active {
+            background-color: #555;
+        }
+
+        #gameOverPopup {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        #gameOverPopup button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #gameOverPopup button:hover {
+            background-color: #555;
+        }
+
+        #gameOverPopup button:active {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div class="controls">
+        <button onclick="changeDirection('left')">
+            <img src="https://cdn-icons-png.flaticon.com/128/608/608283.png" alt="Left">
+        </button>
+        <button onclick="changeDirection('up')">
+            <img src="https://cdn-icons-png.flaticon.com/128/626/626075.png" alt="Up">
+        </button>
+        <button onclick="changeDirection('right')">
+            <img src="https://cdn-icons-png.flaticon.com/128/626/626043.png" alt="Right">
+        </button>
+        <button onclick="changeDirection('down')">
+            <img src="https://cdn-icons-png.flaticon.com/128/608/608258.png" alt="Down">
+        </button>
+    </div>
+    <div id="gameOverPopup">
+        <h1>GAME OVER</h1>
+        <p id="points">Puntos: 0</p>
+        <button onclick="restartGame()">Cerrar</button>
+    </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const grid = 20;
+        const gridCount = 15;
+        const speed = 150; // Velocidad en milisegundos
+
+        canvas.width = grid * gridCount;
+        canvas.height = grid * gridCount;
+
+        let snake = {
+            x: grid * 5,
+            y: grid * 5,
+            cells: [],
+            maxCells: 4,
+            dx: grid,
+            dy: 0
+        };
+
+        let apple = {
+            x: grid * 10,
+            y: grid * 10
+        };
+
+        let points = 0;
+        let gameLoop;
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        function changeDirection(direction) {
+            if (direction === 'left' && snake.dx === 0) {
+                snake.dx = -grid;
+                snake.dy = 0;
+            } else if (direction === 'up' && snake.dy === 0) {
+                snake.dy = -grid;
+                snake.dx = 0;
+            } else if (direction === 'right' && snake.dx === 0) {
+                snake.dx = grid;
+                snake.dy = 0;
+            } else if (direction === 'down' && snake.dy === 0) {
+                snake.dy = grid;
+                snake.dx = 0;
+            }
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#333';
+            for (let x = 0; x < canvas.width; x += grid) {
+                for (let y = 0; y < canvas.height; y += grid) {
+                    ctx.strokeRect(x, y, grid, grid);
+                }
+            }
+        }
+
+        function restartGame() {
+            clearInterval(gameLoop);
+            snake.x = grid * 5;
+            snake.y = grid * 5;
+            snake.cells = [];
+            snake.maxCells = 4;
+            snake.dx = grid;
+            snake.dy = 0;
+            apple.x = getRandomInt(0, gridCount) * grid;
+            apple.y = getRandomInt(0, gridCount) * grid;
+            points = 0;
+            document.getElementById('points').textContent = `Puntos: ${points}`;
+            document.getElementById('gameOverPopup').style.display = 'none';
+            gameLoop = setInterval(loop, speed);
+        }
+
+        function showGameOverPopup() {
+            document.getElementById('points').textContent = `Puntos: ${points}`;
+            document.getElementById('gameOverPopup').style.display = 'block';
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawGrid();
+
+            snake.x += snake.dx;
+            snake.y += snake.dy;
+
+            if (snake.x < 0) {
+                snake.x = canvas.width - grid;
+            } else if (snake.x >= canvas.width) {
+                snake.x = 0;
+            }
+
+            if (snake.y < 0) {
+                snake.y = canvas.height - grid;
+            } else if (snake.y >= canvas.height) {
+                snake.y = 0;
+            }
+
+            snake.cells.unshift({ x: snake.x, y: snake.y });
+
+            if (snake.cells.length > snake.maxCells) {
+                snake.cells.pop();
+            }
+
+            ctx.fillStyle = '#b81414';
+            ctx.fillRect(apple.x, apple.y, grid - 1, grid - 1);
+
+            snake.cells.forEach((cell, index) => {
+                ctx.fillStyle = index === 0 ? '#3b7861' : '#00825a';
+                ctx.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+
+                if (cell.x === apple.x && cell.y === apple.y) {
+                    snake.maxCells++;
+                    points++;
+                    apple.x = getRandomInt(0, gridCount) * grid;
+                    apple.y = getRandomInt(0, gridCount) * grid;
+                }
+
+                for (let i = index + 1; i < snake.cells.length; i++) {
+                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+                        showGameOverPopup();
+                        clearInterval(gameLoop);
+                        return;
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeDirection('left');
+            else if (e.key === 'ArrowUp') changeDirection('up');
+            else if (e.key === 'ArrowRight') changeDirection('right');
+            else if (e.key === 'ArrowDown') changeDirection('down');
+        });
+
+        restartGame();
+    </script>
+</body>
+</html>
